@@ -1,0 +1,13 @@
+app:
+  name: model-service
+  env: dev
+
+paths:
+  models_dir: models
+  logs_dir: logs
+
+training:
+  model_name: model.pkl
+
+logging:
+  level: INFO
