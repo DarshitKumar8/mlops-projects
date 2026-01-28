@@ -1,2 +1,2 @@
 # MLOps Projects 
-Practice: Git discipline phase 4 started.
+Practice: Git discipline phase 4 started
