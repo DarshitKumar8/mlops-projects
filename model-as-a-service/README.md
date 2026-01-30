@@ -71,6 +71,8 @@ No local Python installation required.
 - Environment: dev
 - Model Directory: models/latest
 - Framework: FastAPI + Uvicorn
+### Custom Port Example
+docker run -p 9000:9000 -e PORT=9000 model-service
 
 ---
 

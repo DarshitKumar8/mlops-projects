@@ -1,6 +1,7 @@
 from pathlib import Path
 import os
 import pickle
+import argparse
 
 from fastapi import FastAPI
 import uvicorn
@@ -52,7 +53,6 @@ def health_check():
 
 @app.post("/predict")
 def predict(input_data: dict):
-    # Dummy prediction logic (replace with real model inference)
     return {
         "input": input_data,
         "prediction": "dummy_output",
@@ -60,10 +60,26 @@ def predict(input_data: dict):
     }
 
 
-if __name__ == "__main__":
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--port", type=int, default=None)
+    args = parser.parse_args()
+
+    # Priority order:
+    # 1. CLI argument
+    # 2. Environment variable
+    # 3. Default 8000
+    port = args.port or int(os.getenv("PORT", 8000))
+
+    logger.info("Starting server on port %s", port)
+
     uvicorn.run(
         "src.model_service.serve:app",
         host="0.0.0.0",
-        port=8000,
+        port=port,
         reload=False,
     )
+
+
+if __name__ == "__main__":
+    main()
