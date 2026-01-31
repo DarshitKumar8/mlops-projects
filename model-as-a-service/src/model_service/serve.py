@@ -53,10 +53,13 @@ def health_check():
 
 @app.post("/predict")
 def predict(input_data: dict):
+    config = load_config()
+    model_version = config["training"]["model_version"]
+
     return {
         "input": input_data,
         "prediction": "dummy_output",
-        "model_version": model.get("version", "unknown"),
+        "model_version": model_version,
     }
 
 

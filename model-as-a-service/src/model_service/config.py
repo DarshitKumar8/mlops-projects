@@ -3,26 +3,6 @@ from pathlib import Path
 import yaml
 
 
-# ---------- Environment variables (Docker-safe defaults) ----------
-
-# Absolute paths inside the container (matches your volume mounts)
-MODEL_DIR = os.getenv("MODEL_DIR", "/app/models/latest")
-LOG_DIR   = os.getenv("LOG_DIR", "/app/logs")
-APP_ENV   = os.getenv("APP_ENV", "dev")
-
-
-# ---------- Optional: Fail fast only in production ----------
-
-if APP_ENV == "prod":
-    missing = [k for k, v in {
-        "MODEL_DIR": MODEL_DIR,
-        "LOG_DIR": LOG_DIR,
-    }.items() if not v]
-
-    if missing:
-        raise RuntimeError(f"Missing required env vars in prod: {missing}")
-
-
 # ---------- Project structure helpers ----------
 
 def get_project_root() -> Path:
@@ -33,7 +13,6 @@ def get_project_root() -> Path:
     """
     root = Path(__file__).resolve().parents[2]
 
-    # If running inside Docker, prefer /app explicitly
     if Path("/app").exists():
         return Path("/app")
 
@@ -46,7 +25,7 @@ def load_config() -> dict:
     """
     Loads YAML configuration file.
     """
-    config_path = get_project_root() / "configs" / "config.yaml"
+    config_path = get_project_root() / "configs" / "train_config.yaml"
 
     if not config_path.exists():
         raise FileNotFoundError(f"Config file not found at {config_path}")
@@ -55,33 +34,55 @@ def load_config() -> dict:
         return yaml.safe_load(file)
 
 
-# ---------- Paths resolved using env vars ----------
+# ---------- Auto Versioned Models Directory ----------
 
 def get_models_dir() -> Path:
     """
-    Returns absolute models directory path.
-    Creates it if it doesn't exist.
+    Automatically creates next versioned directory:
+
+        models/v1
+        models/v2
+        models/v3
+        ...
+
+    Never overwrites previous versions.
     """
-    path = Path(MODEL_DIR)
+    config = load_config()
 
-    # If relative path was passed via env, anchor it to project root
-    if not path.is_absolute():
-        path = get_project_root() / path
+    base_dir = config["paths"]["models_dir"]
+    base_path = Path(base_dir)
 
-    path.mkdir(parents=True, exist_ok=True)
-    return path
+    if not base_path.is_absolute():
+        base_path = get_project_root() / base_path
+
+    base_path.mkdir(parents=True, exist_ok=True)
+
+    # Detect existing version folders
+    existing_versions = [
+        int(p.name.replace("v", ""))
+        for p in base_path.glob("v*")
+        if p.is_dir() and p.name.replace("v", "").isdigit()
+    ]
+
+    next_version = max(existing_versions, default=0) + 1
+    version_dir = base_path / f"v{next_version}"
+    version_dir.mkdir(parents=True, exist_ok=True)
+
+    return version_dir
 
 
 def get_logs_dir() -> Path:
     """
-    Returns absolute logs directory path.
-    Creates it if it doesn't exist.
+    Returns logs directory path.
     """
-    path = Path(LOG_DIR)
+    config = load_config()
 
-    # If relative path was passed via env, anchor it to project root
-    if not path.is_absolute():
-        path = get_project_root() / path
+    base_dir = config["paths"]["logs_dir"]
+    base_path = Path(base_dir)
 
-    path.mkdir(parents=True, exist_ok=True)
-    return path
+    if not base_path.is_absolute():
+        base_path = get_project_root() / base_path
+
+    base_path.mkdir(parents=True, exist_ok=True)
+
+    return base_path

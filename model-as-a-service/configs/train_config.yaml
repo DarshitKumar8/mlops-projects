@@ -8,6 +8,7 @@ paths:
 
 training:
   model_name: model.pkl
+  seed: 42
 
 logging:
   level: INFO
